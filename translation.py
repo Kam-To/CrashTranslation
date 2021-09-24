@@ -14,17 +14,19 @@ def translation(ips_header, payload):
 	payload_json = json.loads(payload)
 	content += buildHeader(ips_header_json, payload_json)
 
-	# asi info
-	asi = payload_json["asi"]
-	content += "Application Specific Information:\n\n\n{}\n{}\n{}\n".format(''.join(asi["CoreFoundation"]), ''.join(asi["libsystem_c.dylib"]), ''.join(asi["libc++abi.dylib"]))
-
 	used_binary_images = payload_json["usedImages"]
-	
+
+	# asi info
+	if "asi" in payload_json:
+		asi = payload_json["asi"]
+		content += "Application Specific Information:\n\n\n{}\n{}\n{}\n".format(''.join(asi["CoreFoundation"]), ''.join(asi["libsystem_c.dylib"]), ''.join(asi["libc++abi.dylib"]))
+
 	# last_exception_backtrace
-	last_exception_backtrace = payload_json["lastExceptionBacktrace"]
-	if len(last_exception_backtrace) > 0:
-		content += "Last Exception Backtrace:\n"
-		content += buildFrameStack(last_exception_backtrace, used_binary_images)
+	if "lastExceptionBacktrace" in payload_json:
+		last_exception_backtrace = payload_json["lastExceptionBacktrace"]
+		if len(last_exception_backtrace) > 0:
+				content += "Last Exception Backtrace:\n"
+				content += buildFrameStack(last_exception_backtrace, used_binary_images)
 	
 	# threads backtrace
 	threads = payload_json["threads"]
