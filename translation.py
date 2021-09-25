@@ -8,6 +8,12 @@ import json
 Translating symbolicated Apple JSON format crash log into our old friends :)
 '''
 
+def opGet(json, key):
+	if isinstance(json, dict):
+		if key in json:
+			return json[key]
+	return "None"
+
 def translation(ips_header, payload):
 	content = ""
 	ips_header_json = json.loads(ips_header)
@@ -19,7 +25,11 @@ def translation(ips_header, payload):
 	# asi info
 	if "asi" in payload_json:
 		asi = payload_json["asi"]
-		content += "Application Specific Information:\n\n\n{}\n{}\n{}\n".format(''.join(asi["CoreFoundation"]), ''.join(asi["libsystem_c.dylib"]), ''.join(asi["libc++abi.dylib"]))
+		content += "Application Specific Information:\n\n\n{}\n{}\n{}\n".format(
+			''.join(opGet(asi, "CoreFoundation")), 
+			''.join(opGet(asi, "libsystem_c.dylib")), 
+			''.join(opGet(asi, "libc++abi.dylib"))
+		)
 
 	# last_exception_backtrace
 	if "lastExceptionBacktrace" in payload_json:
@@ -55,31 +65,32 @@ def translation(ips_header, payload):
 
 def buildHeader(ips_header_json, payload_json):
 	content = ""
-	content += "Incident Identifier: {}\n".format(ips_header_json["incident_id"])
-	content += "CrashReporter Key:   {}\n".format(payload_json["crashReporterKey"])
-	content += "Hardware Model:      {}\n".format(payload_json["modelCode"])
-	content += "Process:             {} [{}]\n".format(payload_json["procName"], payload_json["pid"])
-	content += "Path:                {}\n".format(payload_json["procPath"])
-	bundleInfo = payload_json["bundleInfo"]
-	content += "Identifier:          {}\n".format(bundleInfo["CFBundleIdentifier"])
-	content += "Version:             {} ({})\n".format(bundleInfo["CFBundleShortVersionString"], bundleInfo["CFBundleVersion"])
-	content += "Code Type:           {} (Native(?))\n".format(payload_json["cpuType"]) #  (Native) not sure for this
-	content += "Role:                {}\n".format(payload_json["procRole"])
-	content += "Parent Process:      {} [{}]\n".format(payload_json["parentProc"], payload_json["parentPid"])
-	content += "Coalition:           {} [{}]\n".format(payload_json["coalitionName"], payload_json["coalitionID"])
+	content += "Incident Identifier: {}\n".format(opGet(ips_header_json, "incident_id"))
+	content += "CrashReporter Key:   {}\n".format(opGet(payload_json, "crashReporterKey"))
+	content += "Hardware Model:      {}\n".format(opGet(payload_json, "modelCode"))
+	content += "Process:             {} [{}]\n".format(opGet(payload_json, "procName"), opGet(payload_json, "pid"))
+	content += "Path:                {}\n".format(opGet(payload_json, "procPath"))
+	if "bundleInfo" in payload_json:
+		bundleInfo = payload_json["bundleInfo"]
+		content += "Identifier:          {}\n".format(opGet(bundleInfo, "CFBundleIdentifier"))
+		content += "Version:             {} ({})\n".format(opGet(bundleInfo, "CFBundleShortVersionString"), opGet(bundleInfo, "CFBundleVersion"))
+	content += "Code Type:           {} (Native(?))\n".format(opGet(payload_json, "cpuType")) #  (Native) not sure for this
+	content += "Role:                {}\n".format(opGet(payload_json, "procRole"))
+	content += "Parent Process:      {} [{}]\n".format(opGet(payload_json, "parentProc"), opGet(payload_json, "parentPid"))
+	content += "Coalition:           {} [{}]\n".format(opGet(payload_json, "coalitionName"), opGet(payload_json, "coalitionID"))
 	content += "\n"
-	content += "Date/Time:           {}\n".format(payload_json["captureTime"])
-	content += "Launch Time:         {}\n".format(payload_json["procLaunch"])
-	content += "OS Version:          {}\n".format(ips_header_json["os_version"])
-	content += "Release Type:        {}\n".format(payload_json["osVersion"]["releaseType"])
-	content += "Baseband Version:    {}\n".format(payload_json["basebandVersion"])
+	content += "Date/Time:           {}\n".format(opGet(payload_json, "captureTime"))
+	content += "Launch Time:         {}\n".format(opGet(payload_json, "procLaunch"))
+	content += "OS Version:          {}\n".format(opGet(ips_header_json, "os_version"))
+	content += "Release Type:        {}\n".format(opGet(opGet(payload_json, "osVersion"), "releaseType"))
+	content += "Baseband Version:    {}\n".format(opGet(payload_json, "basebandVersion"))
 	content += "Report Version:      104(?)" # not sure
 	content += "\n"
-	exception = payload_json["exception"]
-	content += "Exception Type:  {} ({})\n".format(exception["type"], exception["signal"])
-	content += "Exception Codes: {}\n".format(exception["codes"])
+	exception = opGet(payload_json, "exception")
+	content += "Exception Type:  {} ({})\n".format(opGet(exception, "type"), opGet(exception, "signal"))
+	content += "Exception Codes: {}\n".format(opGet(exception, "codes"))
 	content += "Exception Note:  EXC_CORPSE_NOTIFY(?)\n"
-	content += "Triggered by Thread:  {}\n".format(payload_json["faultingThread"])
+	content += "Triggered by Thread:  {}\n".format(opGet(payload_json, "faultingThread"))
 	content += "\n"
 	return content
 
