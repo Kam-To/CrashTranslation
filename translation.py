@@ -141,7 +141,14 @@ def buildThreadState(triggered_thread_idx, triggered_thread):
 def buildBinaryImages(used_binary_images):
 	content = "\nBinary Images:\n"
 	for image in used_binary_images:
-		content += "       0x{:x} - 0x{:x} {} {}  <{}> {}\n".format(image["base"], image["base"] + image["size"], image["name"], image["arch"], image["uuid"], image["path"])
+		content += "       0x{:x} - 0x{:x} {} {}  <{}> {}\n".format(
+			image["base"], 
+			image["base"] + image["size"], 
+			opGet(image, "name"), 
+			opGet(image, "arch"), 
+			opGet(image, "uuid"), 
+			opGet(image, "path")
+		)
 	return content
 
 if __name__ == "__main__":
