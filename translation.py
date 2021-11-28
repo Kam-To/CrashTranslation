@@ -106,9 +106,14 @@ def buildFrameStack(frames, binarys):
 		frame_belong_to_image = binarys[frame["imageIndex"]]
 		address = frame["imageOffset"] + frame_belong_to_image["base"]
 		if "symbol" in frame:
-			content += "{:<4}{:<40}0x{:x} {} + {}\n".format(idx, frame_belong_to_image["name"], address, frame["symbol"], frame["symbolLocation"])
+			content += "{:<4}{:<40}0x{:x} {} + {}".format(idx, frame_belong_to_image["name"], address, frame["symbol"], frame["symbolLocation"])
 		else:
-			content += "{:<4}{:<40}0x{:x} 0x{:x} + {}\n".format(idx, frame_belong_to_image["name"], address, frame_belong_to_image["base"], frame["imageOffset"])
+			content += "{:<4}{:<40}0x{:x} 0x{:x} + {}".format(idx, frame_belong_to_image["name"], address, frame_belong_to_image["base"], frame["imageOffset"])
+		if "sourceFile" in frame:
+			content += " ({}:{})".format(frame["sourceFile"], opGet(frame, "sourceLine"))
+		if opGet(frame, "inline") == "true":
+			content += " [inlined]"
+		content += "\n"
 	return content
 
 def threadNameInfo(idx, threadObj):
