@@ -25,11 +25,10 @@ def translation(ips_header, payload):
 	# asi info
 	if "asi" in payload_json:
 		asi = payload_json["asi"]
-		content += "Application Specific Information:\n\n\n{}\n{}\n{}\n".format(
-			''.join(opGet(asi, "CoreFoundation")), 
-			''.join(opGet(asi, "libsystem_c.dylib")), 
-			''.join(opGet(asi, "libc++abi.dylib"))
-		)
+		content += "Application Specific Information:\n\n"
+		for key in asi:
+			content += ''.join(asi[key])
+			content += "\n"
 
 	# last_exception_backtrace
 	if "lastExceptionBacktrace" in payload_json:
