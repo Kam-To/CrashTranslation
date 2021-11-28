@@ -89,6 +89,13 @@ def buildHeader(ips_header_json, payload_json):
 	content += "Exception Type:  {} ({})\n".format(opGet(exception, "type"), opGet(exception, "signal"))
 	content += "Exception Codes: {}\n".format(opGet(exception, "codes"))
 	content += "Exception Note:  EXC_CORPSE_NOTIFY(?)\n"
+	if "termination" in payload_json:
+		termination = payload_json["termination"]
+		content += "Termination Reason: {};[{}]\n".format(opGet(termination, "namespace"), opGet(termination, "code"))
+		if "reasons" in termination:
+			reasons = termination["reasons"]
+			content += "\n".join(reasons)
+		content += "\n"
 	content += "Triggered by Thread:  {}\n".format(opGet(payload_json, "faultingThread"))
 	content += "\n"
 	return content
