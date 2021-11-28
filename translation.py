@@ -25,11 +25,10 @@ def translation(ips_header, payload):
 	# asi info
 	if "asi" in payload_json:
 		asi = payload_json["asi"]
-		content += "Application Specific Information:\n\n\n{}\n{}\n{}\n".format(
-			''.join(opGet(asi, "CoreFoundation")), 
-			''.join(opGet(asi, "libsystem_c.dylib")), 
-			''.join(opGet(asi, "libc++abi.dylib"))
-		)
+		content += "Application Specific Information:\n\n"
+		for key in asi:
+			content += ''.join(asi[key])
+			content += "\n"
 
 	# last_exception_backtrace
 	if "lastExceptionBacktrace" in payload_json:
@@ -39,6 +38,7 @@ def translation(ips_header, payload):
 				content += buildFrameStack(last_exception_backtrace, used_binary_images)
 	
 	# threads backtrace
+	triggered_thread_idx = None
 	threads = payload_json["threads"]
 	for idx, thread in enumerate(threads):
 		content += "\n"
@@ -53,11 +53,11 @@ def translation(ips_header, payload):
 		content += buildFrameStack(thread["frames"], used_binary_images)
 
 	content += "\n"
-
-	# triggered thread status
-	triggered_thread = threads[triggered_thread_idx]
-	if "threadState" in triggered_thread:
-		content += buildThreadState(triggered_thread_idx, triggered_thread)
+	if triggered_thread_idx:
+		# triggered thread status
+		triggered_thread = threads[triggered_thread_idx]
+		if "threadState" in triggered_thread:
+			content += buildThreadState(triggered_thread_idx, triggered_thread)
 
 	content += buildBinaryImages(used_binary_images)
 	content += "\nEOF"
@@ -90,6 +90,13 @@ def buildHeader(ips_header_json, payload_json):
 	content += "Exception Type:  {} ({})\n".format(opGet(exception, "type"), opGet(exception, "signal"))
 	content += "Exception Codes: {}\n".format(opGet(exception, "codes"))
 	content += "Exception Note:  EXC_CORPSE_NOTIFY(?)\n"
+	if "termination" in payload_json:
+		termination = payload_json["termination"]
+		content += "Termination Reason: {};[{}]\n".format(opGet(termination, "namespace"), opGet(termination, "code"))
+		if "reasons" in termination:
+			reasons = termination["reasons"]
+			content += "\n".join(reasons)
+		content += "\n"
 	content += "Triggered by Thread:  {}\n".format(opGet(payload_json, "faultingThread"))
 	content += "\n"
 	return content
@@ -100,9 +107,14 @@ def buildFrameStack(frames, binarys):
 		frame_belong_to_image = binarys[frame["imageIndex"]]
 		address = frame["imageOffset"] + frame_belong_to_image["base"]
 		if "symbol" in frame:
-			content += "{:<4}{:<40}0x{:x} {} + {}\n".format(idx, frame_belong_to_image["name"], address, frame["symbol"], frame["symbolLocation"])
+			content += "{:<4}{:<40}0x{:x} {} + {}".format(idx, frame_belong_to_image["name"], address, frame["symbol"], frame["symbolLocation"])
 		else:
-			content += "{:<4}{:<40}0x{:x} 0x{:x} + {}\n".format(idx, frame_belong_to_image["name"], address, frame_belong_to_image["base"], frame["imageOffset"])
+			content += "{:<4}{:<40}0x{:x} 0x{:x} + {}".format(idx, frame_belong_to_image["name"], address, frame_belong_to_image["base"], frame["imageOffset"])
+		if "sourceFile" in frame:
+			content += " ({}:{})".format(frame["sourceFile"], opGet(frame, "sourceLine"))
+		if opGet(frame, "inline") == "true":
+			content += " [inlined]"
+		content += "\n"
 	return content
 
 def threadNameInfo(idx, threadObj):
@@ -130,7 +142,7 @@ def buildThreadState(triggered_thread_idx, triggered_thread):
 	non_general_registers_name = ["fp", "lr", "sp", "pc", "cpsr", "far", "esr"]
 	for idx, name in enumerate(non_general_registers_name):
 		register = thread_state[name]
-		content += "{:>6}: 0x{:016x}".format(name, x["value"])
+		content += "{:>6}: 0x{:016x}".format(name, register["value"])
 		if "description" in register:
 			content += register["description"]
 		if idx % 3 == 2:
