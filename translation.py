@@ -38,6 +38,7 @@ def translation(ips_header, payload):
 				content += buildFrameStack(last_exception_backtrace, used_binary_images)
 	
 	# threads backtrace
+	triggered_thread_idx = None
 	threads = payload_json["threads"]
 	for idx, thread in enumerate(threads):
 		content += "\n"
@@ -52,11 +53,11 @@ def translation(ips_header, payload):
 		content += buildFrameStack(thread["frames"], used_binary_images)
 
 	content += "\n"
-
-	# triggered thread status
-	triggered_thread = threads[triggered_thread_idx]
-	if "threadState" in triggered_thread:
-		content += buildThreadState(triggered_thread_idx, triggered_thread)
+	if triggered_thread_idx:
+		# triggered thread status
+		triggered_thread = threads[triggered_thread_idx]
+		if "threadState" in triggered_thread:
+			content += buildThreadState(triggered_thread_idx, triggered_thread)
 
 	content += buildBinaryImages(used_binary_images)
 	content += "\nEOF"
@@ -141,7 +142,7 @@ def buildThreadState(triggered_thread_idx, triggered_thread):
 	non_general_registers_name = ["fp", "lr", "sp", "pc", "cpsr", "far", "esr"]
 	for idx, name in enumerate(non_general_registers_name):
 		register = thread_state[name]
-		content += "{:>6}: 0x{:016x}".format(name, x["value"])
+		content += "{:>6}: 0x{:016x}".format(name, register["value"])
 		if "description" in register:
 			content += register["description"]
 		if idx % 3 == 2:
